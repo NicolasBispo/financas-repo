@@ -1,0 +1,47 @@
+# Stack base Finanças (Rails API + Vite SPA).
+# VPS: docker compose -f docker-compose.yml -f docker-compose.vps.yml
+
+name: financas
+
+services:
+  api:
+    build:
+      context: ../../apps/backend
+      dockerfile: Dockerfile
+    container_name: financas-app-api
+    restart: unless-stopped
+    expose:
+      - "3000"
+    env_file:
+      - .env
+    environment:
+      RAILS_ENV: production
+      PORT: "3000"
+      POSTGRES_HOST: ${POSTGRES_HOST:-postgres}
+      POSTGRES_PORT: ${POSTGRES_PORT:-5432}
+      POSTGRES_USER: ${FINANCAS_DB_USER:-financas}
+      POSTGRES_PASSWORD: ${FINANCAS_DB_PASSWORD}
+      POSTGRES_DB: ${FINANCAS_DB_NAME:-financas_production}
+      DEVISE_JWT_SECRET_KEY: ${DEVISE_JWT_SECRET_KEY}
+      SECRET_KEY_BASE: ${SECRET_KEY_BASE}
+      CORS_ORIGINS: ${CORS_ORIGINS:-https://financas.nbdev.tech,http://financas.nbdev.tech}
+      FORCE_SSL: "false"
+      ACTIVE_STORAGE_SERVICE: local
+    volumes:
+      - api_storage:/src/app/storage
+
+  frontend:
+    build:
+      context: ../..
+      dockerfile: infra/dockers/frontend/Dockerfile
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-}
+    container_name: financas-app-frontend
+    restart: unless-stopped
+    expose:
+      - "80"
+    depends_on:
+      - api
+
+volumes:
+  api_storage:

@@ -1,0 +1,20 @@
+# Overlay VPS — rede compartilhada vps-internal + Postgres da infra (hostname: postgres).
+# Sem portas publicadas no host; tráfego via Nginx (nicolas-vps-infra).
+
+services:
+  api:
+    environment:
+      POSTGRES_HOST: postgres
+    networks:
+      - default
+      - vps
+
+  frontend:
+    networks:
+      - default
+      - vps
+
+networks:
+  vps:
+    external: true
+    name: vps-internal

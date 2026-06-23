@@ -20,3 +20,4 @@ test:
 # https://edgeguides.rubyonrails.org/configuring.html#connection-preference
 production:
   <<: *default
+  database: <%= ENV.fetch('POSTGRES_DB', 'financas_production') %>
