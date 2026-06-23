@@ -12,12 +12,16 @@
 #  installment_number      :integer
 #  is_paid                 :boolean          default(FALSE), not null
 #  kind                    :integer          default("standalone"), not null
+#  notes                   :text
+#  payment_date            :datetime
+#  payment_method          :string
 #  recurrence_end_date     :datetime
 #  recurrence_frequency    :integer          default("none"), not null
 #  total_installments      :integer
 #  transaction_type        :integer          default("expense"), not null
 #  created_at              :datetime         not null
 #  updated_at              :datetime         not null
+#  bank_account_id         :bigint
 #  credit_card_id          :bigint
 #  parent_transaction_id   :bigint
 #  transaction_category_id :bigint           not null
@@ -25,6 +29,7 @@
 #
 # Indexes
 #
+#  index_financial_transactions_on_bank_account_id          (bank_account_id)
 #  index_financial_transactions_on_credit_card_id           (credit_card_id)
 #  index_financial_transactions_on_parent_transaction_id    (parent_transaction_id)
 #  index_financial_transactions_on_transaction_category_id  (transaction_category_id)
@@ -34,6 +39,7 @@
 #
 # Foreign Keys
 #
+#  fk_rails_...  (bank_account_id => bank_accounts.id)
 #  fk_rails_...  (credit_card_id => credit_cards.id)
 #  fk_rails_...  (parent_transaction_id => financial_transactions.id)
 #  fk_rails_...  (transaction_category_id => transaction_categories.id)

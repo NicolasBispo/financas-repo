@@ -32,7 +32,11 @@ module Finance
         currency: t.currency_code,
         creditCardId: t.credit_card_id,
         creditCardName: t.credit_card&.name,
-        creditCardColorHex: t.credit_card&.color_hex
+        creditCardColorHex: t.credit_card&.color_hex,
+        bankAccountId: t.bank_account_id,
+        paymentMethod: t.payment_method,
+        paymentDate: t.payment_date&.iso8601,
+        notes: t.notes
       }
     end
   end

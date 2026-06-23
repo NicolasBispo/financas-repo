@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_23_000010) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_23_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -107,6 +107,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_23_000010) do
 
   create_table "financial_transactions", force: :cascade do |t|
     t.decimal "amount", precision: 14, scale: 2, default: "0.0", null: false
+    t.bigint "bank_account_id"
     t.datetime "created_at", null: false
     t.bigint "credit_card_id"
     t.string "currency_code", default: "USD", null: false
@@ -115,7 +116,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_23_000010) do
     t.integer "installment_number"
     t.boolean "is_paid", default: false, null: false
     t.integer "kind", default: 0, null: false
+    t.text "notes"
     t.bigint "parent_transaction_id"
+    t.datetime "payment_date"
+    t.string "payment_method"
     t.datetime "recurrence_end_date"
     t.integer "recurrence_frequency", default: 0, null: false
     t.integer "total_installments"
@@ -123,6 +127,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_23_000010) do
     t.integer "transaction_type", default: 1, null: false
     t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
+    t.index ["bank_account_id"], name: "index_financial_transactions_on_bank_account_id"
     t.index ["credit_card_id"], name: "index_financial_transactions_on_credit_card_id"
     t.index ["parent_transaction_id"], name: "index_financial_transactions_on_parent_transaction_id"
     t.index ["transaction_category_id"], name: "index_financial_transactions_on_transaction_category_id"
@@ -324,6 +329,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_23_000010) do
   add_foreign_key "bank_accounts", "users"
   add_foreign_key "credit_cards", "users"
   add_foreign_key "finance_settings", "users"
+  add_foreign_key "financial_transactions", "bank_accounts"
   add_foreign_key "financial_transactions", "credit_cards"
   add_foreign_key "financial_transactions", "financial_transactions", column: "parent_transaction_id"
   add_foreign_key "financial_transactions", "transaction_categories"

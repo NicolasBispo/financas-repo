@@ -24,6 +24,7 @@
 #
 class BankAccount < ApplicationRecord
   belongs_to :user
+  has_many :financial_transactions, dependent: :nullify
 
   validates :name, presence: true
 
