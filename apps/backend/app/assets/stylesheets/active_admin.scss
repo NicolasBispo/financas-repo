@@ -1,0 +1,28 @@
+// Sass variable overrides must be declared before loading up Active Admin's styles.
+//
+// To view the variables that Active Admin provides, take a look at
+// `app/assets/stylesheets/active_admin/mixins/_variables.scss` in the
+// Active Admin source.
+//
+// For example, to change the sidebar width:
+// $sidebar-width: 242px;
+@use '@fortawesome/fontawesome-free/scss/variables' with ($font-path: ".");
+@use '@fortawesome/fontawesome-free/scss/fontawesome';
+@use '@fortawesome/fontawesome-free/scss/solid';
+
+$font-icon: 'Font Awesome 7 Free';
+
+// Active Admin's got SASS!
+@import 'arctic_admin/src/scss/main';
+
+// Overriding any non-variable Sass must be done after the fact.
+// For example, to change the default status-tag color:
+//
+//   .status_tag { background: #6090DB; }
+.disabled_impersonate_button {
+  background-color: #4bacfe6b;
+  color: white;
+  border-radius: 3px;
+  cursor: not-allowed;
+  padding: 5px 8px;
+}

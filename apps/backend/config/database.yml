@@ -1,0 +1,22 @@
+default: &default
+  adapter: postgresql
+  encoding: unicode
+  pool: 100
+  username: <%= ENV.fetch('POSTGRES_USER', 'postgres') %>
+  password: <%= ENV.fetch('POSTGRES_PASSWORD', 'postgres') %>
+  host: <%= ENV.fetch('POSTGRES_HOST', 'localhost') %>
+  port: <%= ENV.fetch('POSTGRES_PORT', '5432') %>
+
+development:
+  <<: *default
+  database: rails_api_base_development
+
+test:
+  <<: *default
+  database: rails_api_base_test<%= ENV['TEST_ENV_NUMBER'] %>
+
+# For production is recommended to set DATABASE_URL env variable.
+# It will take precedence over the config defined here.
+# https://edgeguides.rubyonrails.org/configuring.html#connection-preference
+production:
+  <<: *default
