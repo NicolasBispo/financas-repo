@@ -58,8 +58,9 @@ FROM base
 
 # Install packages needed for deployment
 RUN apt-get update -qq && \
-    apt-get install --no-install-recommends -y curl libpq-dev libvips libjemalloc2 libyaml-dev && \
-    apt-get clean && rm -rf /var/lib/apt/lists/*
+    apt-get install --no-install-recommends -y curl libpq5 libvips libjemalloc2 libyaml-0-2 && \
+    apt-get clean && rm -rf /var/lib/apt/lists/* && \
+    ln -s /usr/lib/*-linux-gnu/libjemalloc.so.2 /usr/lib/libjemalloc.so.2
 
 ENV USERNAME=rails_api_base
 ENV USER_UID=1000
@@ -79,17 +80,12 @@ USER "$USERNAME"
 WORKDIR "$APP_HOME"
 
 # Copy everything from the builder image
-COPY --chown="$USERNAME:$USERNAME" . .
-COPY --from=builder --chown="$USERNAME:$USERNAME" "$APP_HOME/public/" "$APP_HOME/public/"
-COPY --from=builder --chown="$USERNAME:$USERNAME" "$APP_HOME/tmp/" "$APP_HOME/tmp/"
-COPY --from=builder --chown="$USERNAME:$USERNAME" "$APP_HOME/vendor/" "$APP_HOME/vendor/"
-
-# Set permissions (700 for security) and create symlink
-# Note: Permissions set via RUN instead of COPY --chmod for Heroku compatibility
-USER root
-RUN chmod -R 700 "$APP_HOME"
-RUN ln -s /usr/lib/*-linux-gnu/libjemalloc.so.2 /usr/lib/libjemalloc.so.2
-USER "$USERNAME"
+# Permissions (700 for security) set via COPY --chmod instead of a later
+# `RUN chmod -R`, which duplicated every file (vendor/bundle included) in a new layer.
+COPY --chown="$USERNAME:$USERNAME" --chmod=700 . .
+COPY --from=builder --chown="$USERNAME:$USERNAME" --chmod=700 "$APP_HOME/public/" "$APP_HOME/public/"
+COPY --from=builder --chown="$USERNAME:$USERNAME" --chmod=700 "$APP_HOME/tmp/" "$APP_HOME/tmp/"
+COPY --from=builder --chown="$USERNAME:$USERNAME" --chmod=700 "$APP_HOME/vendor/" "$APP_HOME/vendor/"
 
 # Deployment options
 ENV RAILS_LOG_TO_STDOUT=true
