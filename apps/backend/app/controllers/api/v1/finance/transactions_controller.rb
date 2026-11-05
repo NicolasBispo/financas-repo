@@ -34,6 +34,7 @@ module API
           category = resolve_category(category_id: params[:categoryId], category_name: params[:category])
           currency = resolve_currency_for_create(params[:currency])
           credit_card_id = resolve_credit_card_id(type, params[:creditCardId])
+          bank_account_id = resolve_bank_account_id(params[:bankAccountId])
 
           transaction = FinancialTransaction.build_standalone(
             user: current_user,
@@ -44,6 +45,7 @@ module API
             date: parse_time(params[:date]) || Time.current,
             currency_code: currency,
             credit_card_id: credit_card_id,
+            bank_account_id: bank_account_id,
             is_paid: params.key?(:isPaid) ? cast_boolean(params[:isPaid]) : nil
           )
           transaction.save!

@@ -19,8 +19,12 @@ export const queryKeys = {
     banks: ['finance', 'banks'] as const,
     spreadsheet: (params: Record<string, unknown>) =>
       ['finance', 'spreadsheet', params] as const,
+    paymentMethods: ['finance', 'payment-methods'] as const,
     installments: ['finance', 'installments'] as const,
+    recurring: ['finance', 'recurring'] as const,
     recurringPending: (range: { start: string; end: string }) =>
       ['finance', 'recurring', 'pending', range] as const,
+    recurringSkipped: (range: { start: string; end: string }) =>
+      ['finance', 'recurring', 'skipped', range] as const,
   },
 }

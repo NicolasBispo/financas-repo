@@ -6,7 +6,8 @@ import {
   useCreateTransaction,
 } from '@/hooks/use-finance'
 import { addMonthsToDateInput, formatCurrency } from '@/lib/format'
-import { COMMON_CURRENCIES, type Category, type CreditCard } from '@/types/finance'
+import { normalizeAmountInput, parseFlexibleAmount } from '@/lib/parse-amount'
+import { COMMON_CURRENCIES, type BankAccount, type Category, type CreditCard } from '@/types/finance'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -76,18 +77,22 @@ function buildParcels(total: number, count: number, startInput: string): Parcel[
 interface TransactionWizardProps {
   categories: Category[]
   creditCards: CreditCard[]
+  banks: BankAccount[]
   defaultCurrency: string
+  defaultMode?: Mode
   trigger?: ReactNode
 }
 
 export function TransactionWizard({
   categories,
   creditCards,
+  banks,
   defaultCurrency,
+  defaultMode = 'expense',
   trigger,
 }: TransactionWizardProps) {
   const [open, setOpen] = useState(false)
-  const [mode, setMode] = useState<Mode>('expense')
+  const [mode, setMode] = useState<Mode>(defaultMode)
 
   const [description, setDescription] = useState('')
   const [amount, setAmount] = useState('')
@@ -98,6 +103,7 @@ export function TransactionWizard({
   const [categoryName, setCategoryName] = useState('')
   const [creatingCategory, setCreatingCategory] = useState(false)
   const [creditCardId, setCreditCardId] = useState('none')
+  const [bankAccountId, setBankAccountId] = useState('none')
   const [frequency, setFrequency] = useState('Monthly')
   const [recurringType, setRecurringType] = useState<'Income' | 'Expense'>('Expense')
   const [parcels, setParcels] = useState<Parcel[]>([])
@@ -116,7 +122,7 @@ export function TransactionWizard({
   // change. Manual per-parcel edits live on top until one of these changes.
   useEffect(() => {
     if (mode !== 'installment') return
-    const numericTotal = Number(amount)
+    const numericTotal = parseFlexibleAmount(amount)
     const parcelCount = Number(count)
     if (!numericTotal || numericTotal <= 0 || !parcelCount || parcelCount < 1) {
       setParcels([])
@@ -126,7 +132,7 @@ export function TransactionWizard({
   }, [mode, amount, count, date])
 
   function reset() {
-    setMode('expense')
+    setMode(defaultMode)
     setDescription('')
     setAmount('')
     setCount('2')
@@ -136,6 +142,7 @@ export function TransactionWizard({
     setCategoryName('')
     setCreatingCategory(false)
     setCreditCardId('none')
+    setBankAccountId('none')
     setFrequency('Monthly')
     setRecurringType('Expense')
     setParcels([])
@@ -164,7 +171,10 @@ export function TransactionWizard({
     )
   }
 
-  const parcelsTotal = parcels.reduce((sum, parcel) => sum + (Number(parcel.amount) || 0), 0)
+  const parcelsTotal = parcels.reduce((sum, parcel) => {
+    const value = parseFlexibleAmount(parcel.amount)
+    return sum + (Number.isFinite(value) ? value : 0)
+  }, 0)
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault()
@@ -173,11 +183,12 @@ export function TransactionWizard({
     if (!description.trim()) return setError('Informe uma descrição.')
 
     const cardId = creditCardId !== 'none' ? Number(creditCardId) : undefined
+    const bankId = bankAccountId !== 'none' ? Number(bankAccountId) : undefined
 
     try {
       if (mode === 'installment') {
         if (parcels.length === 0) return setError('Informe o valor total e a quantidade de parcelas.')
-        if (parcels.some((parcel) => !(Number(parcel.amount) > 0))) {
+        if (parcels.some((parcel) => !(parseFlexibleAmount(parcel.amount) > 0))) {
           return setError('Cada parcela precisa de um valor maior que zero.')
         }
         await createInstallment.mutateAsync({
@@ -188,13 +199,13 @@ export function TransactionWizard({
           currency,
           creditCardId: cardId,
           installments: parcels.map((parcel) => ({
-            amount: Number(parcel.amount),
+            amount: parseFlexibleAmount(parcel.amount),
             dueDate: toIso(parcel.dueDate),
           })),
           ...categoryFields(),
         })
       } else {
-        const numericAmount = Number(amount)
+        const numericAmount = parseFlexibleAmount(amount)
         if (!amount || Number.isNaN(numericAmount) || numericAmount <= 0) {
           return setError('Informe um valor válido.')
         }
@@ -216,6 +227,7 @@ export function TransactionWizard({
             date: toIso(date),
             currency,
             creditCardId: mode === 'expense' ? cardId : undefined,
+            bankAccountId: bankId,
             ...categoryFields(),
           })
         }
@@ -228,12 +240,14 @@ export function TransactionWizard({
   }
 
   const showCreditCard = mode === 'expense' || mode === 'installment'
+  const showBank = (mode === 'expense' || mode === 'income') && banks.length > 0
 
   return (
     <Dialog
       open={open}
       onOpenChange={(value) => {
         setOpen(value)
+        if (value) setMode(defaultMode)
         if (!value) reset()
       }}
     >
@@ -285,11 +299,10 @@ export function TransactionWizard({
               </Label>
               <Input
                 id="tx-amount"
-                type="number"
-                step="0.01"
-                min="0"
+                type="text"
+                inputMode="decimal"
                 value={amount}
-                onChange={(event) => setAmount(event.target.value)}
+                onChange={(event) => setAmount(normalizeAmountInput(event.target.value))}
                 placeholder="0,00"
               />
             </div>
@@ -442,11 +455,12 @@ export function TransactionWizard({
                       onChange={(value) => updateParcel(index, { dueDate: value })}
                     />
                     <Input
-                      type="number"
-                      step="0.01"
-                      min="0"
+                      type="text"
+                      inputMode="decimal"
                       value={parcel.amount}
-                      onChange={(event) => updateParcel(index, { amount: event.target.value })}
+                      onChange={(event) =>
+                        updateParcel(index, { amount: normalizeAmountInput(event.target.value) })
+                      }
                     />
                   </div>
                 ))}
@@ -466,6 +480,25 @@ export function TransactionWizard({
                   {creditCards.map((card) => (
                     <SelectItem key={card.id} value={String(card.id)}>
                       {card.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          ) : null}
+
+          {showBank ? (
+            <div className="space-y-1.5">
+              <Label>Banco (opcional)</Label>
+              <Select value={bankAccountId} onValueChange={setBankAccountId}>
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Sem banco</SelectItem>
+                  {banks.map((bank) => (
+                    <SelectItem key={bank.id} value={String(bank.id)}>
+                      {bank.name}
                     </SelectItem>
                   ))}
                 </SelectContent>

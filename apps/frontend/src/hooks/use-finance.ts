@@ -223,6 +223,66 @@ export function useRecurringPending(range: finance.PeriodRange) {
   })
 }
 
+export function useRecurringSkipped(range: finance.PeriodRange) {
+  return useQuery({
+    queryKey: queryKeys.finance.recurringSkipped(range),
+    queryFn: () => finance.getRecurringSkipped(range),
+  })
+}
+
+export function useSkipRecurringPeriod() {
+  const invalidate = useInvalidateFinance()
+  return useMutation({
+    mutationFn: finance.skipRecurringPeriod,
+    onSuccess: () => {
+      toast.success('Recorrência ignorada neste mês.')
+      invalidate()
+    },
+    onError: toastError,
+  })
+}
+
+export function useUnskipRecurringPeriod() {
+  const invalidate = useInvalidateFinance()
+  return useMutation({
+    mutationFn: finance.unskipRecurringPeriod,
+    onSuccess: () => {
+      toast.success('Recorrência reativada neste mês.')
+      invalidate()
+    },
+    onError: toastError,
+  })
+}
+
+export function useRecurringPlans() {
+  return useQuery({ queryKey: queryKeys.finance.recurring, queryFn: finance.getRecurringPlans })
+}
+
+export function useUpdateRecurring() {
+  const invalidate = useInvalidateFinance()
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: number; payload: finance.UpdateRecurringPayload }) =>
+      finance.updateRecurring(id, payload),
+    onSuccess: () => {
+      toast.success('Recorrência atualizada.')
+      invalidate()
+    },
+    onError: toastError,
+  })
+}
+
+export function useDeleteRecurring() {
+  const invalidate = useInvalidateFinance()
+  return useMutation({
+    mutationFn: finance.deleteRecurring,
+    onSuccess: () => {
+      toast.success('Recorrência removida.')
+      invalidate()
+    },
+    onError: toastError,
+  })
+}
+
 export function useCreateRecurring() {
   const invalidate = useInvalidateFinance()
   return useMutation({
@@ -278,6 +338,13 @@ export function useDeleteSpreadsheetRow() {
       invalidate()
     },
     onError: toastError,
+  })
+}
+
+export function usePaymentMethods() {
+  return useQuery({
+    queryKey: queryKeys.finance.paymentMethods,
+    queryFn: finance.getPaymentMethods,
   })
 }
 

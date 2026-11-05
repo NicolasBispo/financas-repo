@@ -16,6 +16,7 @@ import { Route as AuthedSpreadsheetRouteImport } from './routes/_authed/spreadsh
 import { Route as AuthedDashboardRouteImport } from './routes/_authed/dashboard'
 import { Route as AuthedCreditCardsIndexRouteImport } from './routes/_authed/credit-cards/index'
 import { Route as AuthedBanksIndexRouteImport } from './routes/_authed/banks/index'
+import { Route as AuthedRecurringIndexRouteImport } from './routes/_authed/recurring/index'
 import { Route as AuthedCreditCardsCardIdRouteImport } from './routes/_authed/credit-cards/$cardId'
 
 const LoginRoute = LoginRouteImport.update({
@@ -52,6 +53,11 @@ const AuthedBanksIndexRoute = AuthedBanksIndexRouteImport.update({
   path: '/banks/',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedRecurringIndexRoute = AuthedRecurringIndexRouteImport.update({
+  id: '/recurring/',
+  path: '/recurring/',
+  getParentRoute: () => AuthedRoute,
+} as any)
 const AuthedCreditCardsCardIdRoute = AuthedCreditCardsCardIdRouteImport.update({
   id: '/credit-cards/$cardId',
   path: '/credit-cards/$cardId',
@@ -65,6 +71,7 @@ export interface FileRoutesByFullPath {
   '/spreadsheet': typeof AuthedSpreadsheetRoute
   '/credit-cards/$cardId': typeof AuthedCreditCardsCardIdRoute
   '/banks/': typeof AuthedBanksIndexRoute
+  '/recurring/': typeof AuthedRecurringIndexRoute
   '/credit-cards/': typeof AuthedCreditCardsIndexRoute
 }
 export interface FileRoutesByTo {
@@ -74,6 +81,7 @@ export interface FileRoutesByTo {
   '/spreadsheet': typeof AuthedSpreadsheetRoute
   '/credit-cards/$cardId': typeof AuthedCreditCardsCardIdRoute
   '/banks': typeof AuthedBanksIndexRoute
+  '/recurring': typeof AuthedRecurringIndexRoute
   '/credit-cards': typeof AuthedCreditCardsIndexRoute
 }
 export interface FileRoutesById {
@@ -85,6 +93,7 @@ export interface FileRoutesById {
   '/_authed/spreadsheet': typeof AuthedSpreadsheetRoute
   '/_authed/credit-cards/$cardId': typeof AuthedCreditCardsCardIdRoute
   '/_authed/banks/': typeof AuthedBanksIndexRoute
+  '/_authed/recurring/': typeof AuthedRecurringIndexRoute
   '/_authed/credit-cards/': typeof AuthedCreditCardsIndexRoute
 }
 export interface FileRouteTypes {
@@ -96,6 +105,7 @@ export interface FileRouteTypes {
     | '/spreadsheet'
     | '/credit-cards/$cardId'
     | '/banks/'
+    | '/recurring/'
     | '/credit-cards/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -105,6 +115,7 @@ export interface FileRouteTypes {
     | '/spreadsheet'
     | '/credit-cards/$cardId'
     | '/banks'
+    | '/recurring'
     | '/credit-cards'
   id:
     | '__root__'
@@ -115,6 +126,7 @@ export interface FileRouteTypes {
     | '/_authed/spreadsheet'
     | '/_authed/credit-cards/$cardId'
     | '/_authed/banks/'
+    | '/_authed/recurring/'
     | '/_authed/credit-cards/'
   fileRoutesById: FileRoutesById
 }
@@ -175,6 +187,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedBanksIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/recurring/': {
+      id: '/_authed/recurring/'
+      path: '/recurring'
+      fullPath: '/recurring/'
+      preLoaderRoute: typeof AuthedRecurringIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/credit-cards/$cardId': {
       id: '/_authed/credit-cards/$cardId'
       path: '/credit-cards/$cardId'
@@ -190,6 +209,7 @@ interface AuthedRouteChildren {
   AuthedSpreadsheetRoute: typeof AuthedSpreadsheetRoute
   AuthedCreditCardsCardIdRoute: typeof AuthedCreditCardsCardIdRoute
   AuthedBanksIndexRoute: typeof AuthedBanksIndexRoute
+  AuthedRecurringIndexRoute: typeof AuthedRecurringIndexRoute
   AuthedCreditCardsIndexRoute: typeof AuthedCreditCardsIndexRoute
 }
 
@@ -198,6 +218,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedSpreadsheetRoute: AuthedSpreadsheetRoute,
   AuthedCreditCardsCardIdRoute: AuthedCreditCardsCardIdRoute,
   AuthedBanksIndexRoute: AuthedBanksIndexRoute,
+  AuthedRecurringIndexRoute: AuthedRecurringIndexRoute,
   AuthedCreditCardsIndexRoute: AuthedCreditCardsIndexRoute,
 }
 

@@ -47,6 +47,12 @@ module API
           current_user.credit_cards.find(credit_card_id).id
         end
 
+        def resolve_bank_account_id(bank_account_id)
+          return nil if bank_account_id.blank?
+
+          current_user.bank_accounts.find(bank_account_id).id
+        end
+
         def parse_transaction_type(value)
           case value.to_s.strip.downcase
           when 'income', '0' then :income

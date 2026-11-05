@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react'
 import { Loader2 } from 'lucide-react'
-import { useUpdateSpreadsheetRow } from '@/hooks/use-finance'
+import { useBanks, useUpdateSpreadsheetRow } from '@/hooks/use-finance'
 import { toDateInputValue } from '@/lib/format'
+import { normalizeAmountInput, parseFlexibleAmount } from '@/lib/parse-amount'
 import { COMMON_CURRENCIES, type SpreadsheetRow } from '@/types/finance'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { DateField } from '@/components/ui/date-field'
+import { PaymentMethodSelect } from '@/components/finance/payment-method-select'
 import {
   Dialog,
   DialogContent,
@@ -29,13 +31,21 @@ interface Props {
   onOpenChange: (open: boolean) => void
 }
 
+function toIso(dateInput: string): string {
+  return new Date(`${dateInput}T12:00:00`).toISOString()
+}
+
 export function SpreadsheetRowEditDialog({ row, open, onOpenChange }: Props) {
   const updateRow = useUpdateSpreadsheetRow()
+  const banks = useBanks()
   const [debitName, setDebitName] = useState('')
   const [dueDate, setDueDate] = useState('')
   const [amount, setAmount] = useState('')
   const [isPaid, setIsPaid] = useState(false)
   const [currency, setCurrency] = useState('USD')
+  const [bankAccountId, setBankAccountId] = useState('none')
+  const [paymentDate, setPaymentDate] = useState('')
+  const [paymentMethod, setPaymentMethod] = useState('')
 
   useEffect(() => {
     if (row) {
@@ -44,19 +54,27 @@ export function SpreadsheetRowEditDialog({ row, open, onOpenChange }: Props) {
       setAmount(String(row.amount))
       setIsPaid(row.isPaid)
       setCurrency(row.currency)
+      setBankAccountId(row.bankAccountId != null ? String(row.bankAccountId) : 'none')
+      setPaymentDate(row.paymentDate ? toDateInputValue(row.paymentDate) : '')
+      setPaymentMethod(row.paymentMethod ?? '')
     }
   }, [row])
 
   async function handleSave() {
     if (!row) return
+    const numericAmount = parseFlexibleAmount(amount)
+    if (!debitName.trim() || !numericAmount || numericAmount <= 0) return
     await updateRow.mutateAsync({
       id: row.id,
       payload: {
         debitName: debitName.trim(),
-        dueDate: new Date(`${dueDate}T12:00:00`).toISOString(),
-        amount: Number(amount),
+        dueDate: toIso(dueDate),
+        amount: numericAmount,
         isPaid,
         currency,
+        bankAccountId: bankAccountId === 'none' ? null : Number(bankAccountId),
+        paymentDate: paymentDate ? toIso(paymentDate) : null,
+        paymentMethod: paymentMethod.trim() || null,
       },
     })
     onOpenChange(false)
@@ -82,10 +100,24 @@ export function SpreadsheetRowEditDialog({ row, open, onOpenChange }: Props) {
               <Label htmlFor="row-amount">Valor</Label>
               <Input
                 id="row-amount"
-                type="number"
-                step="0.01"
+                type="text"
+                inputMode="decimal"
                 value={amount}
-                onChange={(e) => setAmount(e.target.value)}
+                onChange={(e) => setAmount(normalizeAmountInput(e.target.value))}
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="row-payment-date">Data do pagamento</Label>
+              <DateField id="row-payment-date" value={paymentDate} onChange={setPaymentDate} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Método de pagamento</Label>
+              <PaymentMethodSelect
+                value={paymentMethod}
+                onChange={setPaymentMethod}
+                onCommit={setPaymentMethod}
               />
             </div>
           </div>
@@ -106,9 +138,35 @@ export function SpreadsheetRowEditDialog({ row, open, onOpenChange }: Props) {
               </Select>
             </div>
             <label className="flex h-9 items-center gap-2 text-sm">
-              <Checkbox checked={isPaid} onCheckedChange={(value) => setIsPaid(value === true)} />
+              <Checkbox
+                checked={isPaid}
+                onCheckedChange={(value) => {
+                  const next = value === true
+                  setIsPaid(next)
+                  if (next && !paymentDate) {
+                    setPaymentDate(toDateInputValue(new Date().toISOString()))
+                  }
+                  if (!next) setPaymentDate('')
+                }}
+              />
               Pago
             </label>
+          </div>
+          <div className="space-y-1.5">
+            <Label>Banco</Label>
+            <Select value={bankAccountId} onValueChange={setBankAccountId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione um banco" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Sem banco</SelectItem>
+                {banks.data?.map((bank) => (
+                  <SelectItem key={bank.id} value={String(bank.id)}>
+                    {bank.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
         <DialogFooter>

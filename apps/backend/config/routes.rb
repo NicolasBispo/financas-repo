@@ -50,11 +50,18 @@ Rails.application.routes.draw do
 
         resources :installments, only: %i[index create]
 
-        post 'recurring', to: 'recurring#create'
-        get 'recurring/pending', to: 'recurring#pending'
-        post 'recurring/occurrence', to: 'recurring#occurrence'
+        resources :recurring, only: %i[index create update destroy] do
+          collection do
+            get :pending
+            get :skipped
+            post :occurrence
+            post :skip
+            delete 'skip/:id', action: :unskip
+          end
+        end
 
         resources :spreadsheet, only: %i[index update destroy]
+        get 'spreadsheet/payment-methods', to: 'spreadsheet#payment_methods'
         post 'spreadsheet/bulk-paid', to: 'spreadsheet#bulk_paid'
         post 'spreadsheet/bulk-delete', to: 'spreadsheet#bulk_delete'
       end
