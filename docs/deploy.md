@@ -28,7 +28,27 @@ docker login ghcr.io -u nicolasbispo
 # cole o PAT como senha
 ```
 
+## Primeiro deploy
+
+A cópia em `/opt/apps/financas-repo` tem alterações locais não commitadas
+(equivalentes ao commit `ad88401`), e o `git pull` recusa rodar com elas.
+Na primeira vez, guarde-as num stash (fica como backup) antes do pull:
+
+```bash
+cd /opt/apps/financas-repo
+git stash push -u -m "backup antes da migração GHCR"
+git pull
+# opcional: confere que o stash já está contido na main (sem erro = ok)
+git stash show -p stash@{0} | git apply --check -R
+make deploy
+```
+
 ## Deploy
+
+Antes de fazer deploy, confira na aba Actions que o run do commit terminou
+com **os dois jobs verdes** (`financas-repo-api` e `financas-repo-frontend`). O matrix usa
+`fail-fast: false` e runs são cancelados quando chega um push novo, então
+uma imagem pode ter avançado para `latest` e a outra não.
 
 ```bash
 cd /opt/apps/financas-repo
@@ -46,7 +66,9 @@ docker compose -f docker-compose.yml -f docker-compose.vps.yml exec api bundle e
 
 ## Rollback
 
-Use o SHA curto de um build anterior (aba Actions ou página do pacote):
+Use o SHA curto de um build anterior cujo run tenha publicado **as duas
+imagens** (os dois jobs verdes na aba Actions); senão o `pull` falha para a
+imagem que não tem aquele SHA:
 
 ```bash
 make deploy IMAGE_TAG=<sha-anterior>
@@ -56,6 +78,12 @@ IMAGE_TAG=<sha-anterior> docker compose -f docker-compose.yml -f docker-compose.
 ```
 
 Para voltar ao normal: `make deploy` (usa `latest`).
+
+> Atenção: enquanto estiver em rollback, **todo** comando make/compose
+> precisa receber o mesmo `IMAGE_TAG` (ex.: `make up IMAGE_TAG=<sha>`,
+> `make restart IMAGE_TAG=<sha>`). Como os serviços usam
+> `pull_policy: always`, um `make up`/`make restart`/`docker compose up -d`
+> sem `IMAGE_TAG` baixa e sobe `latest`, desfazendo o rollback sem aviso.
 
 > Atenção: rollback de imagem não desfaz migrations já aplicadas.
 
@@ -72,18 +100,24 @@ docker compose -f docker-compose.yml -f docker-compose.vps.yml -f docker-compose
 ```
 
 O build local gera a imagem com o mesmo nome/tag do GHCR; o próximo
-`make deploy` substitui pela versão do registry.
+`make deploy` substitui pela versão do registry. Atenção: por causa do
+`pull_policy: always`, o mesmo vale para `make up`, `make restart` ou
+`docker compose up -d` sem o arquivo de build — eles baixam `latest` do
+registry e substituem o build local. Enquanto estiver no build local, use
+sempre `make up-build` (ou inclua `-f docker-compose.build.yml`).
 
 ## Visibilidade dos pacotes
 
-O repositório é público, então os pacotes do GHCR ligados a ele ficam
-públicos. As imagens não contêm segredos (o frontend é buildado com
+No GHCR, um pacote de container é criado **privado** no primeiro push,
+mesmo com o repositório público (a ligação ao repo só herda permissões de
+acesso, não a visibilidade). Por isso o `docker login` com PAT
+`read:packages` na VPS é obrigatório. As imagens não contêm segredos (o frontend é buildado com
 `VITE_API_BASE_URL` vazio e a API pré-compila assets com
 `SECRET_KEY_BASE=DUMMY`; os segredos reais vêm do `.env` em runtime).
 Observação: a imagem da API copia todo `apps/backend`, incluindo
 `db/imports/financas_2025_2029.csv` (mesmo conteúdo já visível no repo).
 
-Para deixar um pacote privado: GitHub → seu perfil → Packages →
+Tornar um pacote público é opcional: GitHub → seu perfil → Packages →
 `financas-repo-api` (ou `-frontend`) → Package settings → Danger Zone →
-Change visibility → Private. Com pacote privado o `docker login` com PAT
-`read:packages` na VPS continua funcionando.
+Change visibility → Public. O deploy funciona igual nos dois casos, pois a
+VPS sempre faz `docker login`.
