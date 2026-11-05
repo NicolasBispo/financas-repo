@@ -1,13 +1,14 @@
 # Stack base Finanças (Rails API + Vite SPA).
 # VPS: docker compose -f docker-compose.yml -f docker-compose.vps.yml
+# Imagens publicadas no GHCR pelo GitHub Actions (.github/workflows/build.yml).
+# Build local (dev/emergência): adicionar -f docker-compose.build.yml
 
 name: financas
 
 services:
   api:
-    build:
-      context: ../../apps/backend
-      dockerfile: Dockerfile
+    image: ghcr.io/nicolasbispo/financas-repo-api:${IMAGE_TAG:-latest}
+    pull_policy: always
     container_name: financas-app-api
     restart: unless-stopped
     expose:
@@ -31,11 +32,8 @@ services:
       - api_storage:/src/app/storage
 
   frontend:
-    build:
-      context: ../..
-      dockerfile: infra/dockers/frontend/Dockerfile
-      args:
-        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-}
+    image: ghcr.io/nicolasbispo/financas-repo-frontend:${IMAGE_TAG:-latest}
+    pull_policy: always
     container_name: financas-app-frontend
     restart: unless-stopped
     expose:

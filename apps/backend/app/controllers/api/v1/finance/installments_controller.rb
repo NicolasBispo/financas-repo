@@ -10,7 +10,8 @@ module API
                               .where(kind: :installment_root)
                               .includes(:child_transactions)
                               .order(date: :desc)
-          render json: roots.map { |root| ::Finance::InstallmentPlanSerializer.call(root) }
+          active = roots.select { |root| root.child_transactions.any? { |part| !part.is_paid } }
+          render json: active.map { |root| ::Finance::InstallmentPlanSerializer.call(root) }
         end
 
         # POST /api/v1/finance/installments

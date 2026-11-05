@@ -1,4 +1,4 @@
-import { Link, createFileRoute } from '@tanstack/react-router'
+import { Link, createFileRoute, getRouteApi } from '@tanstack/react-router'
 import { ArrowLeft } from 'lucide-react'
 import { useMonth } from '@/hooks/use-month'
 import { useCreditCardSummary, useCreditCardTransactions } from '@/hooks/use-finance'
@@ -10,6 +10,8 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { MonthSelector } from '@/components/finance/month-selector'
 import { TransactionList } from '@/components/finance/transaction-list'
 
+const authedRoute = getRouteApi('/_authed')
+
 export const Route = createFileRoute('/_authed/credit-cards/$cardId')({
   component: CardInvoicePage,
 })
@@ -17,7 +19,8 @@ export const Route = createFileRoute('/_authed/credit-cards/$cardId')({
 function CardInvoicePage() {
   const { cardId } = Route.useParams()
   const id = Number(cardId)
-  const { year, month, label, next, prev } = useMonth()
+  const search = authedRoute.useSearch()
+  const { year, month, label, next, prev } = useMonth(search)
 
   const summary = useCreditCardSummary(id, year, month)
   const transactions = useCreditCardTransactions(id, year, month)

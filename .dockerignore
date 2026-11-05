@@ -1,0 +1,13 @@
+# Contexto de build na raiz do repo (usado pela imagem do frontend:
+# infra/dockers/frontend/Dockerfile). A API usa apps/backend como contexto
+# e tem o próprio apps/backend/.dockerignore.
+.git
+**/node_modules
+**/dist
+**/.env*
+apps/backend
+**/.yarn/cache
+**/.pnp.*
+**/coverage
+**/logs
+**/*.log

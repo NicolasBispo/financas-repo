@@ -1,0 +1,18 @@
+# Build local das imagens (dev ou emergência). NÃO é carregado automaticamente.
+# Uso: docker compose -f docker-compose.yml -f docker-compose.vps.yml -f docker-compose.build.yml up -d --build
+# Em produção as imagens vêm do GHCR (ver docs/deploy.md).
+
+services:
+  api:
+    build:
+      context: ../../apps/backend
+      dockerfile: Dockerfile
+    pull_policy: build
+
+  frontend:
+    build:
+      context: ../..
+      dockerfile: infra/dockers/frontend/Dockerfile
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-}
+    pull_policy: build

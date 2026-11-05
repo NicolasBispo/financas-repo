@@ -39,6 +39,7 @@ class User < ApplicationRecord
   has_many :bank_accounts, dependent: :destroy
   has_many :financial_transactions,
            class_name: 'FinancialTransaction', dependent: :destroy
+  has_many :recurring_period_skips, dependent: :destroy
   has_one :finance_setting, dependent: :destroy
 
   RANSACK_ATTRIBUTES = %w[id email first_name last_name username sign_in_count current_sign_in_at

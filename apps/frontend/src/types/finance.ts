@@ -103,6 +103,35 @@ export interface RecurringPendingItem {
   frequency: RecurrenceFrequency
 }
 
+export interface RecurringPlan {
+  id: number
+  description: string
+  amount: number
+  type: TransactionType
+  frequency: RecurrenceFrequency
+  startDate: string
+  recurrenceEndDate: string | null
+  category: string
+  categoryId: number
+  currency: string
+  occurrenceCount: number
+  lastOccurrenceDate: string | null
+  isActive: boolean
+  isPaused: boolean
+}
+
+export interface RecurringSkippedItem {
+  id: number
+  templateId: number
+  description: string
+  category: string
+  suggestedAmount: number
+  type: TransactionType
+  frequency: RecurrenceFrequency
+  year: number
+  month: number
+}
+
 export interface SpreadsheetRow {
   id: number
   debitType: SpreadsheetDebitType
@@ -116,6 +145,11 @@ export interface SpreadsheetRow {
   categoryColorHex: string | null
   creditCardLabel: string | null
   creditCardColorHex: string | null
+  bankAccountId: number | null
+  bankAccountLabel: string | null
+  bankAccountColorHex: string | null
+  paymentDate: string | null
+  paymentMethod: string | null
 }
 
 export interface CreditCardInvoiceSummary {

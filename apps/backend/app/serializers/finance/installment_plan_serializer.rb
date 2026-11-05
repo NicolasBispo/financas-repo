@@ -14,9 +14,8 @@ module Finance
 
     def as_json(*)
       parts = @root.child_transactions.sort_by { |p| p.installment_number || 0 }
-      today = Date.current
-      upcoming = parts.select { |p| p.date.to_date >= today }
-      next_part = upcoming.min_by(&:date) || parts.last
+      unpaid = parts.reject(&:is_paid)
+      next_part = unpaid.min_by(&:date) || parts.last
       installment_amount = parts.first&.amount.to_f
 
       {
@@ -25,7 +24,7 @@ module Finance
         totalAmount: @root.amount.to_f,
         installmentAmount: installment_amount,
         totalInstallments: @root.total_installments || parts.size,
-        remainingInstallments: upcoming.size,
+        remainingInstallments: unpaid.size,
         startDate: @root.date.iso8601,
         nextPaymentDate: (next_part&.date || @root.date).iso8601
       }

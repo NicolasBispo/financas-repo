@@ -1,11 +1,13 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, getRouteApi, Link } from '@tanstack/react-router'
 import { useMonth } from '@/hooks/use-month'
 import {
   useCategories,
   useCreditCards,
+  useBanks,
   useFinanceSettings,
   useInstallments,
   useRecurringPending,
+  useRecurringSkipped,
   useSummary,
   useTransactions,
 } from '@/hooks/use-finance'
@@ -15,23 +17,29 @@ import { SummaryCards } from '@/components/finance/summary-cards'
 import { TransactionList } from '@/components/finance/transaction-list'
 import { InstallmentsList } from '@/components/finance/installments-list'
 import { RecurringPendingList } from '@/components/finance/recurring-pending-list'
+import { RecurringSkippedList } from '@/components/finance/recurring-skipped-list'
 import { TransactionWizard } from '@/components/finance/transaction-wizard'
 import { SettingsDialog } from '@/components/finance/settings-dialog'
+
+const authedRoute = getRouteApi('/_authed')
 
 export const Route = createFileRoute('/_authed/dashboard')({
   component: DashboardPage,
 })
 
 function DashboardPage() {
-  const { year, month, range, label, next, prev } = useMonth()
+  const search = authedRoute.useSearch()
+  const { year, month, range, label, next, prev } = useMonth(search)
 
   const settings = useFinanceSettings()
   const summary = useSummary(range)
   const transactions = useTransactions(range)
   const installments = useInstallments()
   const recurring = useRecurringPending(range)
+  const recurringSkipped = useRecurringSkipped(range)
   const categories = useCategories()
   const creditCards = useCreditCards()
+  const banks = useBanks()
 
   const currency = settings.data?.defaultCurrency ?? 'USD'
 
@@ -45,6 +53,7 @@ function DashboardPage() {
           <TransactionWizard
             categories={categories.data ?? []}
             creditCards={creditCards.data ?? []}
+            banks={banks.data ?? []}
             defaultCurrency={currency}
           />
         </div>
@@ -73,15 +82,27 @@ function DashboardPage() {
           </Card>
 
           <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0">
               <CardTitle>Recorrências pendentes</CardTitle>
+              <Link
+                to="/recurring"
+                className="text-xs font-medium text-muted-foreground underline underline-offset-2 hover:text-foreground"
+              >
+                Gerenciar
+              </Link>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-4">
               <RecurringPendingList
                 items={recurring.data}
                 isLoading={recurring.isLoading}
                 year={year}
                 month={month}
+                banks={banks.data ?? []}
+              />
+              <RecurringSkippedList
+                items={recurringSkipped.data}
+                isLoading={recurringSkipped.isLoading}
+                currency={currency}
               />
             </CardContent>
           </Card>

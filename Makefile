@@ -5,20 +5,29 @@ ENV_FILE := $(DOCKER_DIR)/.env
 
 COMPOSE := docker compose --project-directory $(DOCKER_DIR)
 COMPOSE_VPS := $(COMPOSE) -f $(DOCKER_DIR)/docker-compose.yml -f $(DOCKER_DIR)/docker-compose.vps.yml
+# Build local (dev/emergência) — em produção as imagens vêm do GHCR
+COMPOSE_BUILD := $(COMPOSE_VPS) -f $(DOCKER_DIR)/docker-compose.build.yml
+
+# Tag das imagens GHCR (latest ou SHA curto do commit). Rollback: make deploy IMAGE_TAG=<sha>
+IMAGE_TAG ?= latest
+export IMAGE_TAG
 
 .DEFAULT_GOAL := help
 
-.PHONY: help init up down restart deploy logs ps migrate health shell-api
+.PHONY: help init up down restart deploy pull build up-build logs ps migrate health shell-api
 
 help: ## Lista comandos disponíveis
 	@echo "Finanças — monorepo"
 	@echo ""
 	@echo "VPS (rede vps-internal + Postgres da infra):"
 	@echo "  make init      copia infra/dockers/.env.example → .env"
-	@echo "  make up        sobe api + frontend"
-	@echo "  make deploy    rebuild + recreate + migrate + health"
+	@echo "  make up        sobe api + frontend (imagens GHCR)"
+	@echo "  make deploy    pull GHCR + up -d + migrate + health"
+	@echo "                 rollback: make deploy IMAGE_TAG=<sha-anterior>"
 	@echo "  make down      para app na VPS"
-	@echo "  make restart   rebuild + recreate"
+	@echo "  make restart   down + up"
+	@echo ""
+	@echo "Build local (dev/emergência): make build | make up-build"
 	@echo ""
 	@echo "Atalhos: migrate, health, logs, ps, shell-api"
 	@echo ""
@@ -35,16 +44,25 @@ _check-vps-env:
 	@grep -q 'DEVISE_JWT_SECRET_KEY=.\+' $(ENV_FILE) || (echo "Defina DEVISE_JWT_SECRET_KEY no .env" && exit 1)
 
 up: _check-vps-env ## Sobe app na VPS (sem portas no host)
-	$(COMPOSE_VPS) up -d --build api frontend
+	$(COMPOSE_VPS) up -d api frontend
+
+pull: ## Baixa as imagens do GHCR (tag IMAGE_TAG, padrão latest)
+	$(COMPOSE_VPS) pull api frontend
+
+build: ## Build local das imagens (docker-compose.build.yml)
+	$(COMPOSE_BUILD) build api frontend
+
+up-build: _check-vps-env ## Build local + sobe (sem GHCR)
+	$(COMPOSE_BUILD) up -d --build api frontend
 
 down: ## Para app na VPS
 	-$(COMPOSE_VPS) down
 
 restart: down up
 
-deploy: _check-vps-env ## Rebuild + migrate + health (VPS)
-	$(COMPOSE_VPS) build api frontend
-	$(COMPOSE_VPS) up -d --force-recreate
+deploy: _check-vps-env ## Pull GHCR + up -d + migrate + health (VPS)
+	$(COMPOSE_VPS) pull api frontend
+	$(COMPOSE_VPS) up -d
 	@echo "Aguardando API Rails…"
 	@for i in 1 2 3 4 5 6 7 8 9 10 12 14 16 18 20; do \
 		$(COMPOSE_VPS) exec -T api curl -sf http://localhost:3000/api/v1/status >/dev/null 2>&1 && break; \

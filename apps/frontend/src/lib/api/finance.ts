@@ -8,6 +8,8 @@ import type {
   FinanceSummary,
   InstallmentPlan,
   RecurringPendingItem,
+  RecurringPlan,
+  RecurringSkippedItem,
   SpreadsheetRow,
   Transaction,
   TransactionDetail,
@@ -156,6 +158,7 @@ export interface CreateTransactionPayload {
   date?: string
   currency?: string
   creditCardId?: number | null
+  bankAccountId?: number | null
   isPaid?: boolean
 }
 
@@ -230,6 +233,50 @@ export async function getRecurringPending(range: PeriodRange): Promise<Recurring
   return data
 }
 
+export async function getRecurringSkipped(range: PeriodRange): Promise<RecurringSkippedItem[]> {
+  const { data } = await api.get('/finance/recurring/skipped', { params: range })
+  return data
+}
+
+export async function skipRecurringPeriod(payload: {
+  templateId: number
+  year: number
+  month: number
+}): Promise<RecurringSkippedItem> {
+  const { data } = await api.post('/finance/recurring/skip', payload)
+  return data
+}
+
+export async function unskipRecurringPeriod(id: number): Promise<void> {
+  await api.delete(`/finance/recurring/skip/${id}`)
+}
+
+export async function getRecurringPlans(): Promise<RecurringPlan[]> {
+  const { data } = await api.get('/finance/recurring')
+  return data
+}
+
+export interface UpdateRecurringPayload {
+  description?: string
+  amount?: number
+  type?: TransactionType
+  frequency?: RecurrenceFrequency
+  startDate?: string
+  recurrenceEndDate?: string | null
+  recurrencePaused?: boolean
+  categoryId?: number
+  category?: string
+}
+
+export async function updateRecurring(id: number, payload: UpdateRecurringPayload): Promise<RecurringPlan> {
+  const { data } = await api.put(`/finance/recurring/${id}`, payload)
+  return data
+}
+
+export async function deleteRecurring(id: number): Promise<void> {
+  await api.delete(`/finance/recurring/${id}`)
+}
+
 export async function createRecurring(payload: CreateRecurringPayload): Promise<Transaction> {
   const { data } = await api.post('/finance/recurring', payload)
   return data
@@ -239,6 +286,7 @@ export async function createRecurringOccurrence(payload: {
   templateId: number
   amount: number
   dueDate: string
+  bankAccountId?: number | null
 }): Promise<Transaction> {
   const { data } = await api.post('/finance/recurring/occurrence', payload)
   return data
@@ -250,6 +298,8 @@ export interface SpreadsheetFilters extends PeriodRange {
   types?: string[]
   categories?: number[]
   paid?: 'paid' | 'unpaid'
+  banks?: Array<number | 'none'>
+  sort?: 'asc' | 'desc'
 }
 
 export interface UpdateSpreadsheetRowPayload {
@@ -258,6 +308,9 @@ export interface UpdateSpreadsheetRowPayload {
   amount: number
   isPaid: boolean
   currency: string
+  bankAccountId?: number | null
+  paymentDate?: string | null
+  paymentMethod?: string | null
 }
 
 export async function getSpreadsheet(filters: SpreadsheetFilters): Promise<SpreadsheetRow[]> {
@@ -268,6 +321,8 @@ export async function getSpreadsheet(filters: SpreadsheetFilters): Promise<Sprea
       types: filters.types?.length ? filters.types.join(',') : undefined,
       categories: filters.categories?.length ? filters.categories.join(',') : undefined,
       paid: filters.paid,
+      banks: filters.banks?.length ? filters.banks.join(',') : undefined,
+      sort: filters.sort,
     },
   })
   return data
@@ -291,4 +346,9 @@ export async function bulkSetPaid(ids: number[], isPaid: boolean): Promise<void>
 
 export async function bulkDelete(ids: number[]): Promise<void> {
   await api.post('/finance/spreadsheet/bulk-delete', { ids })
+}
+
+export async function getPaymentMethods(): Promise<string[]> {
+  const { data } = await api.get('/finance/spreadsheet/payment-methods')
+  return data
 }

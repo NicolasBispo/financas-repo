@@ -1,33 +1,45 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo } from 'react'
+import { useNavigate, useRouterState } from '@tanstack/react-router'
 import { MONTH_LABELS, monthRange } from '@/lib/format'
+import { resolveMonthSearch, type MonthSearch } from '@/lib/month-search'
 
-export function useMonth() {
-  const now = new Date()
-  const [year, setYear] = useState(now.getFullYear())
-  const [month, setMonth] = useState(now.getMonth() + 1)
+export function useMonth(search: MonthSearch) {
+  const navigate = useNavigate()
+  const pathname = useRouterState({ select: (s) => s.location.pathname })
+  const { year, month } = resolveMonthSearch(search)
 
   const range = useMemo(() => monthRange(year, month), [year, month])
   const label = `${MONTH_LABELS[month - 1]} ${year}`
 
+  const setMonthYear = useCallback(
+    (nextYear: number, nextMonth: number) => {
+      void navigate({
+        to: pathname,
+        search: (prev) => ({ ...prev, year: nextYear, month: nextMonth }),
+        replace: true,
+      })
+    },
+    [navigate, pathname],
+  )
+
   const next = useCallback(() => {
-    setMonth((m) => {
-      if (m === 12) {
-        setYear((y) => y + 1)
-        return 1
-      }
-      return m + 1
-    })
-  }, [])
+    if (month === 12) setMonthYear(year + 1, 1)
+    else setMonthYear(year, month + 1)
+  }, [month, setMonthYear, year])
 
   const prev = useCallback(() => {
-    setMonth((m) => {
-      if (m === 1) {
-        setYear((y) => y - 1)
-        return 12
-      }
-      return m - 1
-    })
-  }, [])
+    if (month === 1) setMonthYear(year - 1, 12)
+    else setMonthYear(year, month - 1)
+  }, [month, setMonthYear, year])
 
-  return { year, month, range, label, next, prev, setYear, setMonth }
+  return {
+    year,
+    month,
+    range,
+    label,
+    next,
+    prev,
+    setYear: (y: number) => setMonthYear(y, month),
+    setMonth: (m: number) => setMonthYear(year, m),
+  }
 }
